@@ -75,7 +75,7 @@ class HamiltonianModel(ResNetModel):
                                        [tf.shape(x)[0:3], [tf.shape(W)[2]]], axis=0),
                                    strides=[1, 1, 1, 1],
                                    padding='SAME')
-        return tf.reshape(y, tf.shape(x))
+        return y
 
     def _weight_variable_custom(self, shape, name):
         """A wrapper of self._weight_variable."""
@@ -139,11 +139,13 @@ class HamiltonianModel(ResNetModel):
         z2 = self._batch_norm("bn3", z2, add_ops=add_bn_ops)
         z2 = self._relu("relu3", z2)
         z2 = self._conv2d_transpose(z2, K2)
+        z2 = tf.reshape(z2, tf.shape(y1))                
         z2 = self._batch_norm("bn4", z2, add_ops=add_bn_ops)
         z2 = self._relu("relu4", z2)
         z2 = self._conv2d_transpose(z2, K1)
+        z2 = tf.reshape(z2, tf.shape(y1))        
 
-        y2 = x2 + z2
+        y2 = x2 - z2
 
         y1 = self._possible_downsample(
             y1, in_filter // 2, out_filter // 2, stride)
@@ -172,29 +174,57 @@ class HamiltonianModel(ResNetModel):
           y: [N, H, W, Cout]. Output activation.
         """
         x1, x2 = self._split(concat, in_filter, x)
-        with tf.variable_scope("f"):
-            f_x2 = self._bottleneck_residual_inner(
-                x2,
-                in_filter // 2,
-                out_filter // 2,
-                stride,
-                no_activation=no_activation,
-                add_bn_ops=add_bn_ops)
-        with tf.variable_scope("x1_bottleneck"):
-            x1_ = self._possible_bottleneck_downsample(x1, in_filter // 2,
-                                                       out_filter // 2, stride)
-        with tf.variable_scope("x2_bottleneck"):
-            x2_ = self._possible_bottleneck_downsample(x2, in_filter // 2,
-                                                       out_filter // 2, stride)
-        y1 = f_x2 + x1_
-        with tf.variable_scope("g"):
-            f_y1 = self._bottleneck_residual_inner(
-                y1,
-                out_filter // 2,
-                out_filter // 2,
-                self._stride_arr(1),
-                add_bn_ops=add_bn_ops)
-        y2 = f_y1 + x2_
+
+        K1 = self._weight_variable_custom(
+            [1, 1, in_filter // 2, in_filter // 2 // 4],
+            name="K1_w")
+        K2 = self._weight_variable_custom(
+            [3, 3, in_filter // 2 // 4, in_filter // 2 // 4],
+            name="K2_w")
+        K3 = self._weight_variable_custom(
+            [1, 1, in_filter // 2 // 4, in_filter // 2],
+            name="K3_w")        
+
+        z1 = x2
+        if not no_activation:
+            z1 = self._batch_norm("bn1", z1, add_ops=add_bn_ops)
+            z1 = self._relu("relu1", z1)
+        z1 = tf.nn.conv2d(z1, K1, self._stride_arr(1), padding="SAME")
+        inner_shape = tf.shape(z1)
+        z1 = self._batch_norm("bn2", z1, add_ops=add_bn_ops)
+        z1 = self._relu("relu2", z1)
+        z1 = tf.nn.conv2d(z1, K2, self._stride_arr(1), padding="SAME")        
+        z1 = self._batch_norm("bn3", z1, add_ops=add_bn_ops)
+        z1 = self._relu("relu3", z1)
+        z1 = tf.nn.conv2d(z1, K3, self._stride_arr(1), padding="SAME") 
+        outer_shape = tf.shape(z1)
+
+        y1 = x1 + z1
+
+        z2 = y1
+        z2 = self._batch_norm("bn4", z2, add_ops=add_bn_ops)
+        z2 = self._relu("relu4", z2)
+        z2 = self._conv2d_transpose(z2, K3)
+        z2 = tf.reshape(z2, inner_shape)
+        z2 = self._batch_norm("bn5", z2, add_ops=add_bn_ops)
+        z2 = self._relu("relu5", z2)
+        z2 = self._conv2d_transpose(z2, K2)
+        z2 = tf.reshape(z2, inner_shape)        
+        z2 = self._batch_norm("bn6", z2, add_ops=add_bn_ops)
+        z2 = self._relu("relu6", z2)
+        z2 = self._conv2d_transpose(z2, K1)
+        z2 = tf.reshape(z2, outer_shape)
+
+        y2 = x2 + z2
+
+        with tf.variable_scope("y1_bottleneck"):
+          y1 = self._possible_bottleneck_downsample(y1, in_filter // 2,
+                                                     out_filter // 2, stride)
+        with tf.variable_scope("y2_bottleneck"):
+          y2 = self._possible_bottleneck_downsample(y2, in_filter // 2,
+                                                     out_filter // 2, stride)    
+
+        print("Forward pass: _bottleneck_residual.")                                                       
         return self._combine(concat, y1, y2)
 
     def _residual_backward(self, y, n_filter, concat=False):
@@ -242,22 +272,38 @@ class HamiltonianModel(ResNetModel):
           x: [N, H, W, C]. Input activation.
         """
         y1, y2 = self._split(concat, n_filter, y)
-        with tf.variable_scope("g"):
-            f_y1 = self._bottleneck_residual_inner(
-                y1,
-                n_filter // 2,
-                n_filter // 2,
-                self._stride_arr(1),
-                add_bn_ops=False)
-        x2 = y2 - f_y1
-        with tf.variable_scope("f"):
-            f_x2 = self._bottleneck_residual_inner(
-                x2,
-                n_filter // 2,
-                n_filter // 2,
-                self._stride_arr(1),
-                add_bn_ops=False)
-        x1 = y1 - f_x2
+
+        K1 = tf.get_variable("K1_w")
+        K2 = tf.get_variable("K2_w")
+        K3 = tf.get_variable("K3_w")
+
+        z2 = y1
+        z2 = self._batch_norm("bn4", z2, add_ops=False)
+        z2 = self._relu("relu4", z2)
+        z2 = self._conv2d_transpose(z2, K3)        
+        z2 = self._batch_norm("bn5", z2, add_ops=False)
+        z2 = self._relu("relu5", z2)
+        z2 = self._conv2d_transpose(z2, K2)
+        z2 = self._batch_norm("bn6", z2, add_ops=False)
+        z2 = self._relu("relu6", z2)
+        z2 = self._conv2d_transpose(z2, K1)
+
+        x2 = y2 - z2
+
+        z1 = x2
+        z1 = self._batch_norm("bn1", z1, add_ops=False)
+        z1 = self._relu("relu1", z1)
+        z1 = tf.nn.conv2d(z1, K1, self._stride_arr(1), padding="SAME")
+        z1 = self._batch_norm("bn2", z1, add_ops=False)
+        z1 = self._relu("relu2", z1)
+        z1 = tf.nn.conv2d(z1, K2, self._stride_arr(1), padding="SAME")
+        z1 = self._batch_norm("bn3", z1, add_ops=False)
+        z1 = self._relu("relu3", z1)
+        z1 = tf.nn.conv2d(z1, K3, self._stride_arr(1), padding="SAME")
+
+        x1 = y1 - z1
+
+        print("Backward pass: _bottleneck_residual_backward.")
         return self._combine(concat, x1, x2)
 
     def _residual_grad(self,
@@ -294,9 +340,9 @@ class HamiltonianModel(ResNetModel):
                 no_activation=no_activation,
                 concat=False,
                 add_bn_ops=False)
-            with tf.variable_scope("x2_bottleneck"):
-                x2_ = self._possible_bottleneck_downsample(x2, in_filter // 2,
-                                                           out_filter // 2, stride)
+            # with tf.variable_scope("x2_bottleneck"):
+            #     x2_ = self._possible_bottleneck_downsample(x2, in_filter // 2,
+            #                                                out_filter // 2, stride)
         else:
             y1_, y2_ = self._residual(
                 (x1, x2),
@@ -319,8 +365,11 @@ class HamiltonianModel(ResNetModel):
         for ii in range(2, num_layers + 1):
             w_names.append("bn{}/beta".format(ii))
             w_names.append("bn{}/gamma".format(ii))
+        
         w_names.append("K1_w")
         w_names.append("K2_w")
+        if self.config.use_bottleneck:
+            w_names.append("K3_w")
 
         w_list = map(lambda x: tf.get_variable(x), w_names)
 
@@ -328,8 +377,8 @@ class HamiltonianModel(ResNetModel):
         b1w_names = []
         b2w_names = []
         if self.config.use_bottleneck:
-            b1w_names.append("x1_bottleneck/project/w")
-            b2w_names.append("x2_bottleneck/project/w")
+            b1w_names.append("y1_bottleneck/project/w")
+            b2w_names.append("y2_bottleneck/project/w")
 
             def try_get_variable(x):
                 try:
@@ -363,8 +412,7 @@ class HamiltonianModel(ResNetModel):
         # Downsample function gradients.
         if self.config.use_bottleneck:
             if len(b1w_list) > 0:
-                db1w = tf.gradients(y1_, b1w_list, dy1_plus,
-                                    gate_gradients=True)
+                db1w = tf.gradients(y1_, b1w_list, dy1, gate_gradients=True)
                 dw_list += list(db1w)
                 w_list += list(b1w_list)
             if len(b2w_list) > 0:
