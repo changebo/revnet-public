@@ -77,6 +77,25 @@ class HamiltonianModel(ResNetModel):
                                    padding='SAME')
         return tf.reshape(y, tf.shape(x))
 
+    def _weight_variable_custom(self, shape, name):
+        """A wrapper of self._weight_variable."""
+        filter_size, _, in_filters, out_filters = shape
+
+        if self.config.filter_initialization == "normal":
+          n = filter_size * filter_size * out_filters
+          init_method = "truncated_normal"
+          init_param = {"mean": 0, "stddev": np.sqrt(2.0 / n)}
+        elif self.config.filter_initialization == "uniform":
+          init_method = "uniform_scaling"
+          init_param = {"factor": 1.0}
+
+        return self._weight_variable(shape, 
+          init_method=init_method,
+          init_param=init_param,
+          wd=self.config.wd,
+          dtype=self.dtype,
+          name=name)
+
     def _residual(self,
                   x,
                   in_filter,
@@ -98,27 +117,11 @@ class HamiltonianModel(ResNetModel):
         x1, x2 = self._split(concat, in_filter, x)
 
         filter_size = 3
-        if self.config.filter_initialization == "normal":
-            n = filter_size * filter_size * in_filter
-            init_method = "truncated_normal"
-            init_param = {"mean": 0, "stddev": np.sqrt(2.0 / n)}
-        elif self.config.filter_initialization == "uniform":
-            init_method = "uniform_scaling"
-            init_param = {"factor": 1.0}
-
-        K1 = self._weight_variable(
+        K1 = self._weight_variable_custom(
             [filter_size, filter_size, in_filter // 2, in_filter // 2],
-            init_method=init_method,
-            init_param=init_param,
-            wd=self.config.wd,
-            dtype=self.dtype,
             name="K1_w")
-        K2 = self._weight_variable(
+        K2 = self._weight_variable_custom(
             [filter_size, filter_size, in_filter // 2, in_filter // 2],
-            init_method=init_method,
-            init_param=init_param,
-            wd=self.config.wd,
-            dtype=self.dtype,
             name="K2_w")
 
         z1 = x2
