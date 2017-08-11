@@ -84,3 +84,26 @@ class RevNet104Config(ResNet101Config):
     self.num_residual_units = [2, 2, 11, 2]  # RevNet-104
     self.filters = [128, 128, 256, 512, 832]
     self.name = "revnet-104"
+
+
+@RegisterConfig("hamiltonian-54")
+class Hamiltonian54Config(ResNet50Config):
+
+  def __init__(self):
+    super(Hamiltonian54Config, self).__init__()
+    self.model_class = "hamiltonian"
+    self.manual_gradients = True
+    self.num_residual_units = [2, 2, 3, 2]  # Hamiltonian-54
+    self.filters = [128, 128, 256, 512, 832]
+
+
+@RegisterConfig("hamiltonian-104")
+class Hamiltonian104Config(ResNet101Config):
+
+  def __init__(self):
+    super(Hamiltonian104Config, self).__init__()
+    self.model_class = "hamiltonian"
+    self.manual_gradients = True
+    self.num_residual_units = [2, 2, 11, 2]  # Hamiltonian-104
+    self.filters = [128, 128, 256, 512, 832]
+    self.name = "hamiltonian-104"
