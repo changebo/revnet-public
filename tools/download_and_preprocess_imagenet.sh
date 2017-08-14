@@ -61,7 +61,7 @@ mkdir -p "${SCRATCH_DIR}"
 WORK_DIR="$(pwd)"
 
 # Download the ImageNet data.
-LABELS_FILE="${WORK_DIR}/data/imagenet_lsvrc_2015_synsets.txt"
+LABELS_FILE="${WORK_DIR}/imagenet_lsvrc_2015_synsets.txt"
 DOWNLOAD_SCRIPT="${WORK_DIR}/download_imagenet.sh"
 "${DOWNLOAD_SCRIPT}" "${SCRATCH_DIR}" "${LABELS_FILE}"
 
@@ -73,7 +73,7 @@ VALIDATION_DIRECTORY="${SCRATCH_DIR}validation/"
 # sub-directory based on the label (synset) of the image.
 echo "Organizing the validation data into sub-directories."
 PREPROCESS_VAL_SCRIPT="${WORK_DIR}/preprocess_imagenet_validation_data.py"
-VAL_LABELS_FILE="${WORK_DIR}/data/imagenet_2012_validation_synset_labels.txt"
+VAL_LABELS_FILE="${WORK_DIR}/imagenet_2012_validation_synset_labels.txt"
 
 "${PREPROCESS_VAL_SCRIPT}" "${VALIDATION_DIRECTORY}" "${VAL_LABELS_FILE}"
 
@@ -90,7 +90,7 @@ echo "Finished downloading and preprocessing the ImageNet data."
 # Build the TFRecords version of the ImageNet data.
 BUILD_SCRIPT="${WORK_DIR}/build_imagenet_data.py"
 OUTPUT_DIRECTORY="${DATA_DIR}"
-IMAGENET_METADATA_FILE="${WORK_DIR}/data/imagenet_metadata.txt"
+IMAGENET_METADATA_FILE="${WORK_DIR}/imagenet_metadata.txt"
 
 "${BUILD_SCRIPT}" \
   --train_directory="${TRAIN_DIRECTORY}" \
