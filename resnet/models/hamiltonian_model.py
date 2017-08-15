@@ -215,7 +215,7 @@ class HamiltonianModel(ResNetModel):
         z2 = self._conv2d_transpose(z2, K1)
         z2 = tf.reshape(z2, outer_shape)
 
-        y2 = x2 + z2
+        y2 = x2 - z2
 
         with tf.variable_scope("y1_bottleneck"):
           y1 = self._possible_bottleneck_downsample(y1, in_filter // 2,
@@ -248,7 +248,7 @@ class HamiltonianModel(ResNetModel):
         z2 = self._relu("relu4", z2)
         z2 = self._conv2d_transpose(z2, K1)
 
-        x2 = y2 - z2
+        x2 = y2 + z2
 
         z1 = x2
         z1 = self._batch_norm("bn1", z1, add_ops=False)
@@ -288,7 +288,7 @@ class HamiltonianModel(ResNetModel):
         z2 = self._relu("relu6", z2)
         z2 = self._conv2d_transpose(z2, K1)
 
-        x2 = y2 - z2
+        x2 = y2 + z2
 
         z1 = x2
         z1 = self._batch_norm("bn1", z1, add_ops=False)
