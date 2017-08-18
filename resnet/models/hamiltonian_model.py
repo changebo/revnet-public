@@ -357,8 +357,8 @@ class HamiltonianModel(ResNetModel):
     else:
       fw_names = ["f/sub1/bn1/beta", "f/sub1/bn1/gamma"]
     if self.config.use_bottleneck:
-      fw_names.append("f/w1")
-      fw_names.append("f/w2")
+      fw_names.append("f/one_w")
+      fw_names.append("f/two_w")
     else: 
       fw_names.append("f/w")
 
@@ -372,8 +372,8 @@ class HamiltonianModel(ResNetModel):
     # G function weights.
     gw_names = []
     if self.config.use_bottleneck:
-      gw_names.append("g/w1")
-      gw_names.append("g/w2")
+      gw_names.append("g/one_w")
+      gw_names.append("g/two_w")
     else: 
       gw_names.append("g/w")
 
