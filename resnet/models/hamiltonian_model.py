@@ -134,10 +134,10 @@ class HamiltonianModel(ResNetModel):
     """Transformation applied on bottleneck residual units."""
     K1 = self._weight_variable_custom(
         [1, 1, in_filter, in_filter // 4],
-        name="w1")
+        name="one_w")
     K2 = self._weight_variable_custom(
         [3, 3, in_filter // 4, in_filter // 4],
-        name="w2")
+        name="two_w")
 
     with tf.variable_scope("sub1"):
       if not no_activation:
