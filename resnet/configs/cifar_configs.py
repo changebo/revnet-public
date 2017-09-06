@@ -44,7 +44,8 @@ class ResNet32Config(object):
     self.div255 = True
     self.seed = 0
     self.num_classes = None
-
+    self.weight_smooth_rate = 0.0002
+    self.h = 1.0
 
 @RegisterConfig("resnet-110")
 class ResNet110Config(ResNet32Config):
@@ -126,3 +127,15 @@ class Hamiltonian164Config(ResNet164Config):
     self.manual_gradients = True
     self.filters = [32, 32, 64, 128]
     self.num_residual_units = [9, 9, 9]
+
+
+@RegisterConfig("hamiltonian-50w")
+class Hamiltonian50wConfig(ResNet110Config):
+
+  def __init__(self):
+    super(Hamiltonian50wConfig, self).__init__()
+    self.model_class = "hamiltonian"
+    self.manual_gradients = True
+    self.filters = [64, 64, 128, 256]
+    self.num_residual_units = [4, 4, 4]
+    self.wd = 5e-4
