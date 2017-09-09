@@ -85,6 +85,15 @@ class RevNet110Config(ResNet110Config):
     self.filters = [32, 32, 64, 128]
     self.num_residual_units = [9, 9, 9]
 
+@RegisterConfig("revnet-110")
+class RevNet110Config(ResNet110Config):
+
+  def __init__(self):
+    super(RevNet110Config, self).__init__()
+    self.model_class = "revnet"
+    self.manual_gradients = True
+    self.filters = [32, 32, 64, 128]
+    self.num_residual_units = [9, 9, 9]
 
 @RegisterConfig("revnet-164")
 class RevNet164Config(ResNet164Config):
@@ -106,6 +115,15 @@ class Hamiltonian38Config(ResNet32Config):
     self.filters = [32, 32, 64, 112]
     self.num_residual_units = [3, 3, 3]
 
+@RegisterConfig("hamiltonian-74")
+class Hamiltonian74Config(ResNet32Config):
+
+  def __init__(self):
+    super(Hamiltonian74Config, self).__init__()
+    self.model_class = "hamiltonian"
+    self.manual_gradients = True
+    self.filters = [32, 32, 64, 112]
+    self.num_residual_units = [6, 6, 6]
 
 @RegisterConfig("hamiltonian-110")
 class Hamiltonian110Config(ResNet110Config):
@@ -117,6 +135,15 @@ class Hamiltonian110Config(ResNet110Config):
     self.filters = [32, 32, 64, 128]
     self.num_residual_units = [9, 9, 9]
 
+@RegisterConfig("hamiltonian-218")
+class Hamiltonian218Config(ResNet110Config):
+
+  def __init__(self):
+    super(Hamiltonian218Config, self).__init__()
+    self.model_class = "hamiltonian"
+    self.manual_gradients = True
+    self.filters = [32, 32, 64, 128]
+    self.num_residual_units = [18, 18, 18]
 
 @RegisterConfig("hamiltonian-164")
 class Hamiltonian164Config(ResNet164Config):
