@@ -44,7 +44,8 @@ class ResNet32Config(object):
     self.div255 = True
     self.seed = 0
     self.num_classes = None
-
+    self.weight_smooth_rate = 0.0002
+    self.h = 1.0
 
 @RegisterConfig("resnet-110")
 class ResNet110Config(ResNet32Config):
@@ -84,6 +85,15 @@ class RevNet110Config(ResNet110Config):
     self.filters = [32, 32, 64, 128]
     self.num_residual_units = [9, 9, 9]
 
+@RegisterConfig("revnet-110")
+class RevNet110Config(ResNet110Config):
+
+  def __init__(self):
+    super(RevNet110Config, self).__init__()
+    self.model_class = "revnet"
+    self.manual_gradients = True
+    self.filters = [32, 32, 64, 128]
+    self.num_residual_units = [9, 9, 9]
 
 @RegisterConfig("revnet-164")
 class RevNet164Config(ResNet164Config):
@@ -106,6 +116,15 @@ class Hamiltonian38Config(ResNet32Config):
     self.num_residual_units = [3, 3, 3]
     self.batch_size = 32    
 
+@RegisterConfig("hamiltonian-74")
+class Hamiltonian74Config(ResNet32Config):
+
+  def __init__(self):
+    super(Hamiltonian74Config, self).__init__()
+    self.model_class = "hamiltonian"
+    self.manual_gradients = True
+    self.filters = [32, 32, 64, 112]
+    self.num_residual_units = [6, 6, 6]
 
 @RegisterConfig("hamiltonian-110")
 class Hamiltonian110Config(ResNet110Config):
@@ -117,6 +136,15 @@ class Hamiltonian110Config(ResNet110Config):
     self.filters = [32, 32, 64, 128]
     self.num_residual_units = [9, 9, 9]
 
+@RegisterConfig("hamiltonian-218")
+class Hamiltonian218Config(ResNet110Config):
+
+  def __init__(self):
+    super(Hamiltonian218Config, self).__init__()
+    self.model_class = "hamiltonian"
+    self.manual_gradients = True
+    self.filters = [32, 32, 64, 128]
+    self.num_residual_units = [18, 18, 18]
 
 @RegisterConfig("hamiltonian-164")
 class Hamiltonian164Config(ResNet164Config):
@@ -128,6 +156,7 @@ class Hamiltonian164Config(ResNet164Config):
     self.filters = [32, 32, 64, 128]
     self.num_residual_units = [9, 9, 9]
 
+<<<<<<< HEAD
 @RegisterConfig("hamiltonian-1202")
 class Hamiltonian1202Config(Hamiltonian38Config):
 
@@ -141,3 +170,16 @@ class Hamiltonian1202Config(Hamiltonian38Config):
     self.wd = 5e-4
     self.max_train_iter = 240000
     self.lr_decay_steps = [120000, 180000]
+=======
+
+@RegisterConfig("hamiltonian-50w")
+class Hamiltonian50wConfig(ResNet110Config):
+
+  def __init__(self):
+    super(Hamiltonian50wConfig, self).__init__()
+    self.model_class = "hamiltonian"
+    self.manual_gradients = True
+    self.filters = [64, 64, 128, 256]
+    self.num_residual_units = [4, 4, 4]
+    self.wd = 5e-4
+>>>>>>> ae9d788d4755a6b74d7ba05f4384bff7b5be5f52

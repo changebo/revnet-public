@@ -92,6 +92,10 @@ class ResNetModel(object):
       cost = xent
       cost += self._decay()
 
+      weight_smoothness = self._weight_smoothness()
+      print('Weight smoothness: %f' % weight_smoothness)
+      cost += weight_smoothness
+
     self._cost = cost
     self._input = x
     # Make sure that the labels are in reasonable range.
@@ -130,6 +134,10 @@ class ResNetModel(object):
     self._global_step = global_step
     self._new_lr = tf.placeholder(dtype, shape=[], name="new_learning_rate")
     self._lr_update = tf.assign(self._lr, self._new_lr)
+
+
+  def _weight_smoothness(self):
+    return 0.0
 
   def assign_lr(self, session, lr_value):
     """Assigns new learning rate."""
@@ -264,6 +272,34 @@ class ResNetModel(object):
         name=name,
         trainable=trainable,
         seed=seed)
+
+  def _weight_variable_custom(self, shape, name):
+      """A wrapper of self._weight_variable."""
+      filter_size, _, in_filters, out_filters = shape
+
+      if self.config.filter_initialization == "normal":
+        n = filter_size * filter_size * out_filters
+        init_method = "truncated_normal"
+        init_param = {"mean": 0, "stddev": np.sqrt(2.0 / n)}
+      elif self.config.filter_initialization == "uniform":
+        init_method = "uniform_scaling"
+        init_param = {"factor": 1.0}
+
+      return self._weight_variable(shape, 
+        init_method=init_method,
+        init_param=init_param,
+        wd=self.config.wd,
+        dtype=self.dtype,
+        name=name)
+
+  def _conv2d_transpose(self, x, W):
+      """conv2d_transpose returns a transposed 2d convolution layer with full stride."""
+      y = tf.nn.conv2d_transpose(x, W,
+                                 output_shape=tf.concat(
+                                     [tf.shape(x)[0:3], [tf.shape(W)[2]]], axis=0),
+                                 strides=[1, 1, 1, 1],
+                                 padding='SAME')
+      return y
 
   def _stride_arr(self, stride):
     """Map a stride scalar to the stride array for tf.nn.conv2d."""

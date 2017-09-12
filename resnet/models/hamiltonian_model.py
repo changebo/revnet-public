@@ -71,34 +71,40 @@ class HamiltonianModel(ResNetModel):
   def _bias_variable(self, shape, name):
     return tf.get_variable(name, shape=shape, initializer=tf.constant_initializer(0.0))
 
-  def _weight_variable_custom(self, shape, name):
-      """A wrapper of self._weight_variable."""
-      filter_size, _, in_filters, out_filters = shape
 
-      if self.config.filter_initialization == "normal":
-        n = filter_size * filter_size * out_filters
-        init_method = "truncated_normal"
-        init_param = {"mean": 0, "stddev": np.sqrt(2.0 / n)}
-      elif self.config.filter_initialization == "uniform":
-        init_method = "uniform_scaling"
-        init_param = {"factor": 1.0}
+  def _weight_smoothness(self):
+       """L2 smoothness weight decay loss"""
+       
+       weight_decay_rate = self.config.weight_smooth_rate
+       num_units = len(self.config.num_residual_units)
+       num_blocks=self.config.num_residual_units
 
-      return self._weight_variable(shape, 
-        init_method=init_method,
-        init_param=init_param,
-        wd=self.config.wd,
-        dtype=self.dtype,
-        name=name)
+       def get_weight_block(block_number, unit_number, keyword):
+           """Get weight variable in block block_number and unit unit_number with keyword"""
+           for var in tf.trainable_variables():
+               if var.op.name.find(r"unit_" + str(unit_number)+"_"+str(block_number)) >= 0 and var.op.name.find(keyword) >= 0:
+                   print('Variable found: %s' % var.op.name)
+                   return var
 
-  def _conv2d_transpose(self, x, W):
-      """conv2d_transpose returns a transposed 2d convolution layer with full stride."""
-      y = tf.nn.conv2d_transpose(x, W,
-                                 output_shape=tf.concat(
-                                     [tf.shape(x)[0:3], [tf.shape(W)[2]]], axis=0),
-                                 strides=[1, 1, 1, 1],
-                                 padding='SAME')
-      return y
+       costs = []
+       for k in range(num_units):
+           for j in range(num_blocks[k]-1):
+               var_K1 = get_weight_block(j, k, r'f/w')
+               var_K1_plus = get_weight_block(j+1, k, r'f/w')
+               if (var_K1!=None and var_K1_plus!=None and var_K1[2]==var_K1_plus[2]):
+                   costs.append(tf.nn.l2_loss(var_K1 - var_K1_plus))
 
+               var_K2 = get_weight_block(j, k, r'g/w')
+               var_K2_plus = get_weight_block(j+1, k, r'g/w')
+               if(var_K2 != None and var_K2_plus !=None and var_K2[2]==var_K2_plus[2]):
+                   costs.append(tf.nn.l2_loss(var_K2 - var_K2_plus))
+
+       if (len(costs)==0):
+           print('No weight variable found!')
+           return 0
+       else:
+           return tf.multiply(weight_decay_rate, tf.add_n(costs))
+           
   def _residual_inner(self,
                       x,
                       in_filter,
@@ -127,7 +133,7 @@ class HamiltonianModel(ResNetModel):
       # x = self._conv("conv2", x, 3, out_filter, out_filter, [1, 1, 1, 1])
       x = self._conv2d_transpose(x, K)
 
-    return x * 0.1
+    return x * self.config.h
 
   def _bottleneck_residual_inner(self,
                                  x,
