@@ -10,7 +10,7 @@ from resnet.utils.concurrent_batch_iter import ConcurrentBatchIterator
 def get_dataset(name,
                 split,
                 data_aug=True,
-                batch_size=100,
+                batch_size=32,
                 cycle=True,
                 prefetch=True,
                 shuffle=True,
@@ -53,7 +53,7 @@ def get_dataset(name,
 
 
 def get_iter(dataset,
-             batch_size=100,
+             batch_size=32,
              shuffle=False,
              cycle=False,
              log_epoch=-1,

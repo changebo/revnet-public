@@ -257,12 +257,12 @@ def main():
   trainval_data = get_dataset(
       dataset_name,
       train_str,
-      num_batches=100,
+      num_batches=32,
       data_aug=False,
       cycle=False,
       prefetch=False)
   test_data = get_dataset(
-      dataset_name, test_str, data_aug=False, cycle=False, prefetch=False)
+      dataset_name, test_str, num_batches=100, data_aug=False, cycle=False, prefetch=False)
 
   # Trains a model.
   acc = train_model(

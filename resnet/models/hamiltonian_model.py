@@ -114,15 +114,15 @@ class HamiltonianModel(ResNetModel):
       name="w")
     with tf.variable_scope("sub1"):
       if not no_activation:
-        x = x + self._bias_variable([in_filter], "bias1")
-        # x = self._batch_norm("bn1", x, add_ops=add_bn_ops)
+        # x = x + self._bias_variable([in_filter], "bias1")
+        x = self._batch_norm("bn1", x, add_ops=add_bn_ops)
         # x = self._relu("relu1", x)
       # x = self._conv("conv1", x, 3, in_filter, out_filter, stride)
       x = tf.nn.conv2d(x, K, self._stride_arr(1), padding="SAME")
 
     with tf.variable_scope("sub2"):
-      # x = self._batch_norm("bn2", x, add_ops=add_bn_ops)
-      x = x + self._bias_variable([in_filter], "bias2")
+      x = self._batch_norm("bn2", x, add_ops=add_bn_ops)
+      # x = x + self._bias_variable([in_filter], "bias2")
       x = self._relu("relu2", x)
       # x = self._conv("conv2", x, 3, out_filter, out_filter, [1, 1, 1, 1])
       x = self._conv2d_transpose(x, K)
@@ -360,7 +360,8 @@ class HamiltonianModel(ResNetModel):
     if no_activation:
       fw_names = []
     else:
-      fw_names = ["f/sub1/bias1"]
+      # fw_names = ["f/sub1/bias1"]
+      fw_names = ["f/sub1/bn1/beta", "f/sub1/bn1/gamma"]      
     if self.config.use_bottleneck:
       fw_names.append("f/one_w")
       fw_names.append("f/two_w")
@@ -369,7 +370,9 @@ class HamiltonianModel(ResNetModel):
 
     num_layers = 3 if self.config.use_bottleneck else 2
     for ii in range(2, num_layers + 1):
-      fw_names.append("f/sub{}/bias{}".format(ii, ii))
+      # fw_names.append("f/sub{}/bias{}".format(ii, ii))
+      fw_names.append("f/sub{}/bn{}/beta".format(ii, ii))
+      fw_names.append("f/sub{}/bn{}/gamma".format(ii, ii))
       # fw_names.append("f/sub{}/conv{}/w".format(ii, ii))
     fw_list = map(lambda x: tf.get_variable(x), fw_names)
 
@@ -382,7 +385,9 @@ class HamiltonianModel(ResNetModel):
       gw_names.append("g/w")
 
     for ii in range(1, num_layers + 1):
-      gw_names.append("g/sub{}/bias{}".format(ii, ii))
+      # gw_names.append("g/sub{}/bias{}".format(ii, ii))
+      fw_names.append("f/sub{}/bn{}/beta".format(ii, ii))
+      fw_names.append("f/sub{}/bn{}/gamma".format(ii, ii))
       # gw_names.append("g/sub{}/conv{}/w".format(ii, ii))
     gw_list = map(lambda x: tf.get_variable(x), gw_names)
 

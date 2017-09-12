@@ -104,6 +104,7 @@ class Hamiltonian38Config(ResNet32Config):
     self.manual_gradients = True
     self.filters = [32, 32, 64, 112]
     self.num_residual_units = [3, 3, 3]
+    self.batch_size = 32    
 
 
 @RegisterConfig("hamiltonian-110")
@@ -126,3 +127,17 @@ class Hamiltonian164Config(ResNet164Config):
     self.manual_gradients = True
     self.filters = [32, 32, 64, 128]
     self.num_residual_units = [9, 9, 9]
+
+@RegisterConfig("hamiltonian-1202")
+class Hamiltonian1202Config(Hamiltonian38Config):
+
+  def __init__(self):
+    super(Hamiltonian1202Config, self).__init__()
+    self.model_class = "hamiltonian"
+    self.manual_gradients = True
+    self.filters = [32, 32, 64, 128]
+    self.num_residual_units = [100, 100, 100]
+    self.batch_size = 32    
+    self.wd = 5e-4
+    self.max_train_iter = 240000
+    self.lr_decay_steps = [120000, 180000]
